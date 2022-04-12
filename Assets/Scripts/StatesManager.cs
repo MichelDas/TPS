@@ -33,6 +33,7 @@ namespace TPS_Redux
         public HandleShooting handleShooting;
         [HideInInspector]
         public HandleAnimations handleAnimations;
+        internal bool canAim;
 
         private void Start()
         {
@@ -51,21 +52,23 @@ namespace TPS_Redux
         public void GetInCover(CoverPosition cover)
         {
             // find distance to the first position
-            float distFromPos1 = Vector3.Distance(transform.position, cover.pos1.position);
+            float distFromPos1 = Vector3.Distance(transform.position, cover.curvePath.GetPointAt(0));
             // subdivide with full length to return the percentage
             coverPercentage = distFromPos1 / cover.length;
 
-            // find the direction toward the second position
-            Vector3 dir = cover.pos2.position - cover.pos1.position;
-            dir.Normalize(); // normalize it
 
-            // scale it and add the cover world position
-            Vector3 targetPos = (dir * distFromPos1) + cover.pos1.position;
+            #region obsolete
+            //// find the direction toward th 
+            #endregion
+
+            // find the point in the curve with the percentage we found above
+            Vector3 targetPos = cover.curvePath.GetPointAt(coverPercentage);
 
             // start lerping so we can hug the wall
             StartCoroutine(LerpToCoverPositionPercentage(targetPos));
 
             coverPosition = cover;
+            inCover = true;
         }
 
         private IEnumerator LerpToCoverPositionPercentage(Vector3 targetPos)
@@ -98,8 +101,5 @@ namespace TPS_Redux
         }
    
     }
-
-        
-
 
 }

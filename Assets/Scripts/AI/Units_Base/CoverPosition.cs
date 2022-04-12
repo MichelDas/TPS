@@ -2,14 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CoverPosition : MonoBehaviour {
+public class CoverPosition : MonoBehaviour
+{
 
-	public Transform pos1;
+	public BezierCurve curvePath;
 	public bool blockPos1;
-	public Transform pos2;
 	public bool blockPos2;
 
-	public float length;
+    #region obsolete
+    public Transform pos1;
+	public Transform pos2;
+    #endregion
+
+    public float length;
 	public CoverType coverType;
 
 	public enum CoverType
@@ -20,7 +25,8 @@ public class CoverPosition : MonoBehaviour {
 
     private void Start()
     {
-		length = Vector3.Distance(pos1.position, pos2.position);
+        curvePath = GetComponentInChildren<BezierCurve>();
+        length = curvePath.length;
     }
 }
 

@@ -21,6 +21,9 @@ namespace TPS_Redux
         public float rotateSpeed = 2;
         public float turnSpeed = 5;
 
+        public float coverAcceleration = 0.5f;
+        public float coverMaxSpeed = 2;
+
         float horizontal;
         float vertical;
 
@@ -85,26 +88,74 @@ namespace TPS_Redux
             }
         }
 
-        private void GetOutOfCover()
-        {
-            // for now, if we want to move out of cover, we just hit the back button
-            if(vertical < -0.5f)
-            {
-                if (!statesManager.isAiming)  // we can't leave cover while aiming
-                {
-                    // reset cover variables
-                    statesManager.coverPosition = null;
-                    statesManager.inCover = false;
 
-                    //clear the list of covers to ignore
-                    StartCoroutine("ClearIgnoreList");
-                }
-            }
-        }
 
         private void HandleCoverMovement()
         {
-            throw new NotImplementedException();
+            // if we are in cover, we will move with a lerp not with physics
+
+            // we decided were to look (and play the correct animation) based on our inputs
+            if(horizontal != 0)
+            {
+                if(horizontal < 0)
+                {
+                    statesManager.coverDirection = -1;   // we are looking left
+                }
+                else
+                {
+                    statesManager.coverDirection = 1;  // we are looking right
+                }
+            }
+
+            // Hondle Cover Rotation
+
+            // Our rotation is the same as the first cover position, for a linear movement cover, this works perfectly
+            // Later we will do it in a different way
+
+            Quaternion targetRotation = Quaternion.LookRotation(statesManager.coverPosition.pos1.forward);
+
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotateSpeed);
+
+            // store the full length of the movement we can do on the cover
+            float lineLength = statesManager.coverPosition.length;
+
+            // find the movement speed + acceleration
+            float movement = ((horizontal * coverAcceleration) * coverMaxSpeed) * Time.deltaTime;
+
+            // turn the movement into percentage
+            float lerpMovement = movement / lineLength;
+
+            // add that to our cover moving cover percentage
+            statesManager.coverPercentage -= lerpMovement;
+
+            // Clamp the cover percentage into 0-1 values
+            statesManager.coverPercentage = Mathf.Clamp01(statesManager.coverPercentage);
+
+            // and start moving on the lerp
+            Vector3 targetPosition = Vector3.Lerp(statesManager.coverPosition.pos1.position,
+                                                 statesManager.coverPosition.pos2.position,
+                                                 statesManager.coverPercentage);
+
+            // apply that to out transform
+            transform.position = targetPosition;
+        }
+
+         private void GetOutOfCover()
+        {
+            // for now, if we want to get out of cover, we just hit the back button
+            if (vertical < 0.5f)
+            {
+                if (!statesManager.isAiming) // we can't leave cover if we are aiming
+                {
+                    // reset variables in stateManager
+                    statesManager.coverPosition = null;
+                    statesManager.inCover = false;
+
+                    //Start a coroutine to clear the list of covers to ignore
+                    StartCoroutine("ClearIgnoreList");
+
+                }
+            }
         }
 
         private void SearchForCover()
@@ -183,7 +234,7 @@ namespace TPS_Redux
 
         private void HandleRotation(Vector3 hor, Vector3 ver, bool onGround)
         {
-            if (statesManager.isAiming)
+            if (statesManager.isAiming && !statesManager.inCover) // basically, if we are in cover, we do not rotate
             {
                 // if the player is aiming, the character will always look at where the camera is looking
                 lookDirection.y = 0;
@@ -192,6 +243,9 @@ namespace TPS_Redux
             }
             else
             {
+                if (statesManager.inCover)
+                    return;
+
                 storeDirection = transform.position + hor + ver;
 
                 Vector3 dir = storeDirection - transform.position;

@@ -36,6 +36,9 @@ namespace TPS_Redux
                 anim.SetFloat("Forward", movement, 0.1f, Time.deltaTime);
 
             }
+
+            anim.SetBool("Cover", statesManager.inCover);
+            anim.SetInteger("CoverDirection", statesManager.coverDirection);
         }
 
         void SetupAnimator()

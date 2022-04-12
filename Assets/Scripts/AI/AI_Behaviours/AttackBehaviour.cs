@@ -35,7 +35,7 @@ namespace AI
 		public List<Transform> coverPositions = new List<Transform>();
 		public List<Transform> ignorePositions = new List<Transform>();
 		private ObjectDistanceComparer objectDistanceComparer;
-		public Coverbase currentCoverPosition;
+		//public Coverbase currentCoverPosition;
 		public int maxTries = 3;
 		public int _curTries;
 
@@ -247,7 +247,7 @@ namespace AI
 						enAI_main.charStats.aim = false;
 						findCoverPositions = false;
 						_curTries = 0;
-						currentCoverPosition.occupied = false;
+						//currentCoverPosition.occupied = false;
 						enAI_main.AI_State_Cover ();
 					}
 
@@ -314,138 +314,138 @@ namespace AI
 
 		public void CoverBehavior()
 		{
-			if ( !findCoverPositions )
-			{
-				FindCover ();
-			}
-			else
-			{
-				enAI_main.charStats.MoveToPosition (currentCoverPosition.positionObject.position);
-				enAI_main.charStats.run = true;
+			//if ( !findCoverPositions )
+			//{
+			//	FindCover ();
+			//}
+			//else
+			//{
+			//	enAI_main.charStats.MoveToPosition (currentCoverPosition.positionObject.position);
+			//	enAI_main.charStats.run = true;
 
-				float distance = Vector3.Distance (transform.position, currentCoverPosition.positionObject.position);
+			//	float distance = Vector3.Distance (transform.position, currentCoverPosition.positionObject.position);
 
-				if ( distance < 1 )
-				{
-					enAI_main.charStats.hasCover = true;
-					enAI_main.charStats.StopMoving ();
-					enAI_main.AI_State_Attack ();
-				}
-			}
+			//	if ( distance < 1 )
+			//	{
+			//		enAI_main.charStats.hasCover = true;
+			//		enAI_main.charStats.StopMoving ();
+			//		enAI_main.AI_State_Attack ();
+			//	}
+			//}
 		}
 
 		void ReEvaluateCover()
 		{
-			Vector3 targetPosition = enAI_main.lastKnownPosition;
-			Transform validatePosition = currentCoverPosition.positionObject.parent.parent.transform;
+		//	Vector3 targetPosition = enAI_main.lastKnownPosition;
+		//	Transform validatePosition = currentCoverPosition.positionObject.parent.parent.transform;
 
-			Vector3 directionOfTarget = targetPosition - validatePosition.position;
-			Vector3 coverForward = validatePosition.TransformDirection (Vector3.forward);
+		//	Vector3 directionOfTarget = targetPosition - validatePosition.position;
+		//	Vector3 coverForward = validatePosition.TransformDirection (Vector3.forward);
 
-			if ( Vector3.Dot (coverForward, directionOfTarget) > 0 )
-			{
-				if ( currentCoverPosition.backPos )
-					validCover = false;
-				else
-					validCover = true;
-			}
-			else
-			{
-				if ( currentCoverPosition.backPos )
-				{
-					validCover = true;
-				}
-				else
-					validCover = false;
-			}
-		}
+		//	if ( Vector3.Dot (coverForward, directionOfTarget) > 0 )
+		//	{
+		//		if ( currentCoverPosition.backPos )
+		//			validCover = false;
+		//		else
+		//			validCover = true;
+		//	}
+		//	else
+		//	{
+		//		if ( currentCoverPosition.backPos )
+		//		{
+		//			validCover = true;
+		//		}
+		//		else
+		//			validCover = false;
+		//	}
+		//}
 			
-		void FindCover()
-		{
-			if ( _curTries <= maxTries )
-			{
-				if ( !findCoverPositions )
-				{
-					findCoverPositions = true;
-					_curTries++;
+		//void FindCover()
+		//{
+		//	if ( _curTries <= maxTries )
+		//	{
+		//		if ( !findCoverPositions )
+		//		{
+		//			findCoverPositions = true;
+		//			_curTries++;
 
-					Coverbase targetCoverPosition = null;
-					float distanceToTarget = Vector3.Distance (transform.position, enAI_main.target.transform.position);
+		//			Coverbase targetCoverPosition = null;
+		//			float distanceToTarget = Vector3.Distance (transform.position, enAI_main.target.transform.position);
 
-					coverPositions.Clear ();
+		//			coverPositions.Clear ();
 
-					Vector3 targetPosition = enAI_main.target.transform.position;
+		//			Vector3 targetPosition = enAI_main.target.transform.position;
 
-					Collider[] colliders = Physics.OverlapSphere (transform.position, 20);
+		//			Collider[] colliders = Physics.OverlapSphere (transform.position, 20);
 
-					for (int i = 0; i < colliders.Length; i++)
-					{
-						if ( colliders [i].GetComponent<CoverPosition> () )
-						{
-							if ( !ignorePositions.Contains (colliders [i].transform) )
-							{
-								float distanceToCandidate = Vector3.Distance (transform.position, colliders [i].transform.position);
+		//			for (int i = 0; i < colliders.Length; i++)
+		//			{
+		//				if ( colliders [i].GetComponent<CoverPosition> () )
+		//				{
+		//					if ( !ignorePositions.Contains (colliders [i].transform) )
+		//					{
+		//						float distanceToCandidate = Vector3.Distance (transform.position, colliders [i].transform.position);
 
-								if ( distanceToCandidate < distanceToTarget )
-								{
-									coverPositions.Add (colliders [i].transform);
-								}
-							}
-						}
-					}
+		//						if ( distanceToCandidate < distanceToTarget )
+		//						{
+		//							coverPositions.Add (colliders [i].transform);
+		//						}
+		//					}
+		//				}
+		//			}
 
-					if ( coverPositions.Count > 0 )
-					{
-						SortPositions (coverPositions);
+		//			if ( coverPositions.Count > 0 )
+		//			{
+		//				SortPositions (coverPositions);
 
-						CoverPosition validatePosition = coverPositions [0].GetComponent<CoverPosition> ();
+		//				CoverPosition validatePosition = coverPositions [0].GetComponent<CoverPosition> ();
 
-						Vector3 directionOfTarget = targetPosition - validatePosition.transform.position;
-						Vector3 coverForward = validatePosition.transform.TransformDirection (Vector3.forward);
+		//				Vector3 directionOfTarget = targetPosition - validatePosition.transform.position;
+		//				Vector3 coverForward = validatePosition.transform.TransformDirection (Vector3.forward);
 
-						if ( Vector3.Dot (coverForward, directionOfTarget) < 0 )
-						{
-							for (int i = 0; i < validatePosition.BackPositions.Count; i++)
-							{
-								if ( !validatePosition.BackPositions [i].occupied )
-								{
-									targetCoverPosition = validatePosition.BackPositions [i];
-								}
-							}
-						}
-						else
-						{
-							for (int i = 0; i < validatePosition.FrontPositions.Count; i++)
-							{
-								if ( !validatePosition.FrontPositions [i].occupied )
-								{
-									targetCoverPosition = validatePosition.FrontPositions [i];
-								}
-							}
-						}
-					}
+		//				if ( Vector3.Dot (coverForward, directionOfTarget) < 0 )
+		//				{
+		//					for (int i = 0; i < validatePosition.BackPositions.Count; i++)
+		//					{
+		//						if ( !validatePosition.BackPositions [i].occupied )
+		//						{
+		//							targetCoverPosition = validatePosition.BackPositions [i];
+		//						}
+		//					}
+		//				}
+		//				else
+		//				{
+		//					for (int i = 0; i < validatePosition.FrontPositions.Count; i++)
+		//					{
+		//						if ( !validatePosition.FrontPositions [i].occupied )
+		//						{
+		//							targetCoverPosition = validatePosition.FrontPositions [i];
+		//						}
+		//					}
+		//				}
+		//			}
 
-					if ( targetCoverPosition == null )
-					{
-						findCoverPositions = false;
+		//			if ( targetCoverPosition == null )
+		//			{
+		//				findCoverPositions = false;
 
-						if ( coverPositions.Count > 0 )
-						{
-							ignorePositions.Add (coverPositions [0]);
-						}
-					}
-					else
-					{
-						targetCoverPosition.occupied = true;
-						currentCoverPosition = targetCoverPosition;
-					}
-				}
-			}
-			else
-			{
-				Debug.Log ("Max tries reached! Changing behavior!");
-				enAI_main.AI_State_Attack ();
-			}
+		//				if ( coverPositions.Count > 0 )
+		//				{
+		//					ignorePositions.Add (coverPositions [0]);
+		//				}
+		//			}
+		//			else
+		//			{
+		//				targetCoverPosition.occupied = true;
+		//				currentCoverPosition = targetCoverPosition;
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		Debug.Log ("Max tries reached! Changing behavior!");
+		//		enAI_main.AI_State_Attack ();
+		//	}
 
 		}
 
