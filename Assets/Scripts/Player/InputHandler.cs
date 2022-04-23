@@ -45,6 +45,8 @@ namespace TPS_Redux
         float curShake;
 
         public bool leftPivot;
+        public bool changePivot;
+        public bool crouch;
 
         public CameraValues cameraValues;
 
@@ -112,7 +114,7 @@ namespace TPS_Redux
 
             if (Physics.Raycast(ray.origin, ray.direction, out hit, 500, layerMask))
             {
-                Debug.Log("hitting " + hit.transform.gameObject.name);
+                //Debug.Log("hitting " + hit.transform.gameObject.name);
                 if(hit.transform.tag == "AICharacter")
                 {
                     foreach(Crosshair cr in crosshairManager.crosshairs)
@@ -152,6 +154,9 @@ namespace TPS_Redux
 
             // change the x value of the pivot according to if he is looking left or right
             float pivotX = (!leftPivot) ? cameraValues.startingPivotPos.x : -cameraValues.startingPivotPos.x;
+            // if we are not crouching, the camera Y will be normal as startingPoing.
+            // if we are crouching just decrease the height of the camera 0.5f
+            float pivotY = (!statesManager.isCrouching) ? cameraValues.startingPivotPos.y : cameraValues.startingPivotPos.y - 0.5f;
 
             // if we are in cover
             if (statesManager.inCover)
@@ -170,8 +175,28 @@ namespace TPS_Redux
                     // when aimin we want out camera to start peaking towards that position
 
                     // first find the offset in the local position of the transform
-                    Vector3 localPos = new Vector3(cameraValues.coverCameraOffsetX * statesManager.coverDirection, 0,
-                                                    cameraValues.coverCameraOffsetZ);
+                    
+
+                    Vector3 localPos = Vector3.zero;
+
+                    if (statesManager.crouchCover && !statesManager.aimAtSides)
+                    {
+                        // reset the y of the pivot
+                        pivotY = cameraValues.startingPivotPos.y;
+
+                        // and pass the angle
+                        camProperties.coverAngleMin = -50;
+                        camProperties.coverAngleMax = 50;
+                    }
+                    else
+                    {
+                        localPos = new Vector3(cameraValues.coverCameraOffsetX * statesManager.coverDirection, 0,
+                                                        cameraValues.coverCameraOffsetZ);
+
+                        //update the angles the camera can look into depending on our cover position
+                        camProperties.coverAngleMin = (statesManager.coverDirection < 0) ? cameraValues.coverLeftMinAngle : cameraValues.coverRightMinAngle;
+                        camProperties.coverAngleMax = (statesManager.coverDirection < 0) ? cameraValues.coverLeftMaxAngle : cameraValues.coverRightMaxAngle;
+                    }
 
                     // then turn the local position to world position
                     Vector3 worldPos = transform.TransformPoint(localPos);
@@ -181,12 +206,11 @@ namespace TPS_Redux
                     cameraValues.targetCameraOffset = worldPos;
 
                     // update the angles where the camera can look into according to the cover position
-                    camProperties.coverAngleMin = (statesManager.coverDirection < 0) ? cameraValues.coverLeftMinAngle : cameraValues.coverRightMinAngle;
-                    camProperties.coverAngleMax = (statesManager.coverDirection < 0) ? cameraValues.coverLeftMaxAngle : cameraValues.coverRightMaxAngle;
+
                 }
 
                 // change the pivot local position accordingly
-                Vector3 targetPivotPos = new Vector3(pivotX, cameraValues.startingPivotPos.y, cameraValues.startingPivotPos.z);
+                Vector3 targetPivotPos = new Vector3(pivotX, pivotY, cameraValues.startingPivotPos.z);
                 camPivot.localPosition = Vector3.Lerp(camPivot.localPosition, targetPivotPos, Time.deltaTime * 3);
 
 
@@ -207,6 +231,7 @@ namespace TPS_Redux
             mouseX = Input.GetAxis("Mouse X");
             mouseY = Input.GetAxis("Mouse Y");
             fire3 = Input.GetAxis("Fire3");
+            crouch = Input.GetKeyDown(KeyCode.C);
 
             //// from the tps to fps video
             //if (canSwitch)
@@ -224,6 +249,18 @@ namespace TPS_Redux
 
             if (statesManager.inCover) // if we are in cover we want to override controls
             {
+                changePivot = false; // in cover we will have the pivot moved
+
+                // update tye type of cover we are in
+                if(statesManager.coverPosition.coverType == CoverPosition.CoverType.half)
+                {
+                    statesManager.crouchCover = true;
+                }
+                else
+                {
+                    statesManager.crouchCover = false;
+                }
+
                 if (statesManager.isAiming) // if we are aiming we cannot move
                 {
                     horizontal = 0;
@@ -233,10 +270,12 @@ namespace TPS_Redux
                     // if we are at one edge of the cover
                     if(statesManager.coverPercentage > 0.99f)
                     {
-                        if(!statesManager.coverPosition.blockPos2)   // and it's a viable aiming position
+                        // and it's a viable aiming position
+                        if (!statesManager.coverPosition.blockPos2)   
                         {
                             // then we can aim
                             statesManager.canAim = true;
+                            statesManager.aimAtSides = true;
                         }
 
                         // clamp the movement to only move one way
@@ -248,16 +287,31 @@ namespace TPS_Redux
                         if (!statesManager.coverPosition.blockPos1)
                         {
                             statesManager.canAim = true;
+                            statesManager.aimAtSides = true;
                         }
                         // clamp the movement to only move one way
                         horizontal = Mathf.Clamp(horizontal, -1, 0);
                     }
-                    else
+                    else // we are not in the edge of the cover
                     {
-                        statesManager.canAim = false;
+                        //statesManager.canAim = false;
+                        statesManager.aimAtSides = false;
                     }
                 }
 
+            }
+            else
+            {
+                // if we are not in cover, we handle the aiming as before
+
+                statesManager.crouchCover = false;
+                statesManager.canAim = false;
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    changePivot = !changePivot;
+                }
+                leftPivot = changePivot;
             }
         }
 
@@ -266,8 +320,16 @@ namespace TPS_Redux
         {
             statesManager.canRun = !statesManager.isAiming;
 
-            if (!statesManager.inCover)  // we can walk if we are not in cover
-                statesManager.isWalking = (fire3 > 0);  // holding left shift
+            // if we are not in cover, then walking is controlled by the input
+            if (!statesManager.inCover)
+            {
+                // we can walk if we are not in cover
+                if (!statesManager.dontRun)
+                    statesManager.isWalking = (fire3 > 0);  // holding left shift
+                else
+                    statesManager.isWalking = true;
+            }
+
 
             statesManager.horizontal = horizontal;
             statesManager.vertical = vertical;
@@ -276,14 +338,27 @@ namespace TPS_Redux
             if (statesManager.inCover)
             {
                 // if out input let us aim, we will aim
-                //if(mouse2 > 0 && statesManager.canAim)
-                if (statesManager.canAim && (mouse2 > 0))
+                if (statesManager.crouchCover)
                 {
-                    statesManager.isAiming = true;
+                    if(mouse2 > 0)
+                    {
+                        statesManager.isAiming = true;
+                    }
+                    else
+                    {
+                        statesManager.isAiming = false;
+                    }
                 }
-                else
+                else // else do what we did before
                 {
-                    statesManager.isAiming = false;
+                    if(mouse2 > 0 && statesManager.canAim)
+                    {
+                        statesManager.isAiming = true;
+                    }
+                    else
+                    {
+                        statesManager.isAiming = false;
+                    }
                 }
             }
             else
@@ -311,6 +386,17 @@ namespace TPS_Redux
                 statesManager.shoot = false;
                 targetZ = cameraNormalZ;  // update Z of the camera
                 targetFov = normalFov;
+            }
+
+            if (crouch)
+            {
+                statesManager.isCrouching = !statesManager.isCrouching;
+            }
+
+            //if we are in a half cover, we always want to crouch
+            if (statesManager.crouchCover)
+            {
+                statesManager.isCrouching = true;
             }
         }
 

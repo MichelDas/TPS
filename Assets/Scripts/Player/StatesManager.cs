@@ -14,11 +14,16 @@ namespace TPS_Redux
         public bool shoot;
         public bool isReloading;
         public bool isOnGround;
+        public bool isCrouching;
+        public float stance;
 
         public float coverPercentage;
         public CoverPosition coverPosition;
         public bool inCover;
         public int coverDirection;
+        public bool canAim;
+        public bool crouchCover;
+        public bool aimAtSides;
         public bool canAnimate;
 
         public float horizontal;
@@ -33,7 +38,6 @@ namespace TPS_Redux
         public HandleShooting handleShooting;
         [HideInInspector]
         public HandleAnimations handleAnimations;
-        internal bool canAim;
 
         private void Start()
         {
@@ -47,6 +51,21 @@ namespace TPS_Redux
             isOnGround = IsOnGround();
 
             isWalking = inCover;
+
+            HandleStance();
+        }
+
+        float targetStance;
+        internal bool dontRun;
+
+        private void HandleStance()
+        {
+            if (!isCrouching)
+                targetStance = 1; // play standing animation
+            else
+                targetStance = 0; // play crouching animation
+
+            stance = Mathf.Lerp(stance, targetStance, Time.deltaTime * 3f);
         }
 
         public void GetInCover(CoverPosition cover)

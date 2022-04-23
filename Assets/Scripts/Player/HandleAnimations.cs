@@ -39,6 +39,9 @@ namespace TPS_Redux
 
             anim.SetBool("Cover", statesManager.inCover);
             anim.SetInteger("CoverDirection", statesManager.coverDirection);
+            anim.SetBool("CrouchToUpAim", statesManager.crouchCover);
+            anim.SetFloat("Stance", statesManager.stance);
+            anim.SetBool("AimAtSides", statesManager.aimAtSides);
         }
 
         void SetupAnimator()

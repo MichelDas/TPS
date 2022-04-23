@@ -149,6 +149,7 @@ namespace TPS_Redux
         {
             // same as right hand with some extra checks
             float multiplier = 3;
+            LHIK_dis_notAiming = !statesManager.isAiming;
 
             if (statesManager.inCover)  // if we are in cover
             {
@@ -175,22 +176,26 @@ namespace TPS_Redux
             else   // if we are not in cover
             {
                 multiplier = 10;
-                if (!LHIK_dis_notAiming)
+                if (!LHIK_dis_notAiming)  // means aiming
                 {
-                    targetWeight = 1;
+                    Debug.Log("is this coming here");
+                    targetLHWeight = 1;
                 }
                 else
                 {
-                    targetWeight = (statesManager.isAiming) ? 1 : 0;
+                    targetLHWeight = (statesManager.isAiming) ? 1 : 0;
                 }
             }
 
             if (statesManager.isReloading) // if we are reloading
             {
+                Debug.Log("is reloading?");
                 // no ik will be there
                 targetLHWeight = 0;
                 multiplier = 10;
             }
+
+            Debug.Log(targetLHWeight);
 
             // lerp to desired values
             leftHandIKWeight = Mathf.Lerp(leftHandIKWeight, targetLHWeight, Time.deltaTime * multiplier);

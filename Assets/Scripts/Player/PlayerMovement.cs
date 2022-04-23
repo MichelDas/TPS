@@ -93,6 +93,7 @@ namespace TPS_Redux
         private void HandleCoverMovement()
         {
             // if we are in cover, we will move with a lerp not with physics
+            
 
             // we decided were to look (and play the correct animation) based on our inputs
             if(horizontal != 0)
@@ -107,40 +108,82 @@ namespace TPS_Redux
                 }
             }
 
+
             // Hondle Cover Rotation
 
             // Our rotation is the same as the first cover position, for a linear movement cover, this works perfectly
             // Later we will do it in a different way
+            #region obsolete
+            //Quaternion targetRotation = Quaternion.LookRotation(statesManager.coverPosition.pos1.forward);
+            //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotateSpeed);
+            #endregion
 
-            Quaternion targetRotation = Quaternion.LookRotation(statesManager.coverPosition.pos1.forward);
 
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotateSpeed);
+            // First we calculate how much we move in percentage,
+            // Then add that to path percentage
+            // then lerp the character to that percentage in the curve
+
 
             // store the full length of the movement we can do on the cover
             float lineLength = statesManager.coverPosition.length;
 
             // find the movement speed + acceleration
-            float movement = ((horizontal * coverAcceleration) * coverMaxSpeed) * Time.deltaTime;
+            float movement = ((horizontal * coverAcceleration)
+                * coverMaxSpeed) * Time.deltaTime;
 
             // turn the movement into percentage
             float lerpMovement = movement / lineLength;
 
-            // add that to our cover moving cover percentage
+            // add that to our cover moving percentage
             statesManager.coverPercentage -= lerpMovement;
 
             // Clamp the cover percentage into 0-1 values
             statesManager.coverPercentage = Mathf.Clamp01(statesManager.coverPercentage);
 
+            Vector3 curvePathPosition = statesManager.coverPosition.curvePath.GetPointAt(statesManager.coverPercentage);
+
+            curvePathPosition.y = transform.position.y;
+
+            HandleCoverRotation();
+
+            #region obsolete
             // and start moving on the lerp
-            Vector3 targetPosition = Vector3.Lerp(statesManager.coverPosition.pos1.position,
-                                                 statesManager.coverPosition.pos2.position,
-                                                 statesManager.coverPercentage);
+            //Vector3 targetPosition = Vector3.Lerp(statesManager.coverPosition.pos1.position,
+            //                                     statesManager.coverPosition.pos2.position,
+            //                                     statesManager.coverPercentage);
+
+            #endregion
 
             // apply that to out transform
-            transform.position = targetPosition;
+            transform.position = curvePathPosition;
         }
 
-         private void GetOutOfCover()
+        private void HandleCoverRotation()
+        {
+            // find a percentae ahead of us
+            float forwardPerc = statesManager.coverPercentage + 0.1f;
+
+            // make sure it's always in the path
+            if(forwardPerc > 0.99f)
+            {
+                forwardPerc = 1;
+            }
+
+            // find the position you are now
+            Vector3 positionNow = statesManager.coverPosition.curvePath.GetPointAt(statesManager.coverPercentage);
+            // and find the position forward of us, that is 0.1 ahead
+            Vector3 positionForward = statesManager.coverPosition.curvePath.GetPointAt(forwardPerc);
+
+            // the direction we want to look is the cross product of the two points
+            Vector3 direction = Vector3.Cross(positionNow, positionForward);
+            // remove the y other wise the character might start flying
+            direction.y = 0;
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotateSpeed);
+        }
+
+        private void GetOutOfCover()
         {
             // for now, if we want to get out of cover, we just hit the back button
             if (vertical < 0.5f)
@@ -168,16 +211,16 @@ namespace TPS_Redux
             // change the distance of raycast accordingly
             if(Physics.Raycast(origin, direction, out hit, 2))
             {
-                // if we found one
-                if (hit.transform.GetComponent<CoverPosition>())
+                // if we find cover poisitions
+                if (hit.transform.GetComponentInParent<CoverPosition>())
                 {
                     // if ignore cover doesn't have have the cover position
-                    if (!ignoreCovers.Contains(hit.transform.GetComponent <CoverPosition>()))
+                    if (!ignoreCovers.Contains(hit.transform.GetComponentInParent<CoverPosition>()))
                     {
                         //get in cover
-                        statesManager.GetInCover(hit.transform.GetComponent<CoverPosition>());
+                        statesManager.GetInCover(hit.transform.GetComponentInParent<CoverPosition>());
                         // add that cover to ignore list
-                        ignoreCovers.Add(hit.transform.GetComponent<CoverPosition>());
+                        ignoreCovers.Add(hit.transform.GetComponentInParent<CoverPosition>());
                     }
                 }
             }
